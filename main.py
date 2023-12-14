@@ -2,8 +2,9 @@ import time
 import os
 import math
 import csv
-import requests
 import base64
+import requests
+from urllib.parse import urlparse
 from io import BytesIO
 from PIL import Image
 from selenium import webdriver
@@ -82,7 +83,7 @@ def load_data(folder, images, title="images"):
 
     if not os.path.exists(f'result/{folder}'):
         os.makedirs(f'result/{folder}')
-    with open(f'result/{folder}/{title}.csv', mode='a+', newline='', encoding='utf-8') as file:
+    with open(f'result/{folder}/{title}.csv', mode='w', newline='', encoding='utf-8') as file:
         fieldnames = ['index', 'src']
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
@@ -98,10 +99,11 @@ def load_data(folder, images, title="images"):
     images = []
 
 
-def chien():
+# Cherche {number} photos de chien et Stock dans un fichier csv : Renvoie Minimum 500 ohhhh même si vous spécifiez moins
+def searchDogPictures(number):
     category = "chien"
     racesNumber = len(races_de_chiens)
-    images_per_race = math.ceil(1000/racesNumber)
+    images_per_race = math.ceil(number/racesNumber)
     images = []
     for race in races_de_chiens:
         found_count = 0
@@ -111,11 +113,7 @@ def chien():
     load_data(category, images)
 
 
-def __main__():
-    chien()
-
-
-# __main__()
+# Parcours le fichier csv soumis via csv_path et télécharges les images dans le folder spécifié
 def download_images_from_csv(csv_path, folder):
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -124,28 +122,55 @@ def download_images_from_csv(csv_path, folder):
         reader = csv.DictReader(file)
         for row in reader:
             index = row['index']
-            # Ignorer la partie 'data:image/jpeg;base64,'
-            base64_data = row['src'].split(',')[1]
+            src = row['src']
+            if src.startswith("data"):
+                # Ignorer la partie 'data:image/jpeg;base64,'
+                base64_data = row['src'].split(',')[1]
+                try:
+                    # Décodez la chaîne base64 pour obtenir les données binaires de l'image
+                    image_data = base64.b64decode(base64_data)
 
-            try:
-                # Décodez la chaîne base64 pour obtenir les données binaires de l'image
-                image_data = base64.b64decode(base64_data)
+                    # Utilisez PIL pour créer une image à partir des données binaires
+                    image = Image.open(BytesIO(image_data))
 
-                # Utilisez PIL pour créer une image à partir des données binaires
-                image = Image.open(BytesIO(image_data))
+                    # Construire le chemin du fichier local
+                    file_path = os.path.join(folder, f'image_{index}.jpg')
 
-                # Construire le chemin du fichier local
-                file_path = os.path.join(folder, f'image_{index}.jpg')
+                    # Enregistrez l'image dans le fichier local
+                    image.save(file_path, 'JPEG')
+                    print(
+                        f"Image {index} téléchargée avec succès dans {file_path}")
+                except Exception as e:
+                    print(f"Échec du téléchargement de l'image {index}: {e}")
+            else:
+                try:
+                    # Utilisez requests pour télécharger l'image
+                    response = requests.get(src)
 
-                # Enregistrez l'image dans le fichier local
-                image.save(file_path, 'JPEG')
-                print(
-                    f"Image {index} téléchargée avec succès dans {file_path}")
+                    if response.status_code == 200:
+                        # Extraire le nom du fichier à partir de l'URL
+                        file_name = os.path.basename(urlparse(src).path)
 
-            except Exception as e:
-                print(f"Échec du téléchargement de l'image {index}: {e}")
+                        # Construire le chemin du fichier local
+                        file_path = os.path.join(
+                            folder, f'image_{index}_{file_name}.jpg')
+
+                        # Enregistrez l'image dans le fichier local
+                        with open(file_path, 'wb') as local_file:
+                            local_file.write(response.content)
+                            print(
+                                f"Image {index} téléchargée avec succès dans {file_path}")
+                    else:
+                        print(
+                            f"Échec du téléchargement de l'image {index}: Code de statut {response.status_code}")
+                except Exception as e:
+                    print(f"Échec du téléchargement de l'image {index}: {e}")
+                    # print("La variable src ne commence pas par 'data'")
 
 
-# Utilisation de la fonction download_images_from_csv
-# Assurez-vous de fournir le chemin correct du fichier CSV et le nom du dossier de destination
-download_images_from_csv('result/chien/images.csv', 'images_chien')
+def __main__():
+    searchDogPictures(25000)
+    download_images_from_csv('result/chien/images.csv', 'images_chien')
+
+
+__main__()
