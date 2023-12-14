@@ -1,6 +1,6 @@
-# Nom de Votre Projet
+# Animals
 
-Bienvenue dans [animals] ! Ce projet parcour [la banque d'images de Google et récupères des images d'animaux].
+Bienvenue dans [animals] ! Ce projet parcourt [la banque d'images de Google et récupères des images d'animaux].
 
 ## Prérequis
 
