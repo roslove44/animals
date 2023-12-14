@@ -2,6 +2,10 @@ import time
 import os
 import math
 import csv
+import requests
+import base64
+from io import BytesIO
+from PIL import Image
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
@@ -37,6 +41,7 @@ def scroll_down(driver):
 
 def search(found_count, search_query, max_count):
     driver = webdriver.Chrome()
+    driver.maximize_window()
     driver.get("https://images.google.com/")
     elem = driver.find_element(By.CSS_SELECTOR, "#APjFqb")
     elem.clear()
@@ -108,3 +113,39 @@ def chien():
 
 def __main__():
     chien()
+
+
+# __main__()
+def download_images_from_csv(csv_path, folder):
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
+    with open(csv_path, mode='r', encoding='utf-8') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            index = row['index']
+            # Ignorer la partie 'data:image/jpeg;base64,'
+            base64_data = row['src'].split(',')[1]
+
+            try:
+                # Décodez la chaîne base64 pour obtenir les données binaires de l'image
+                image_data = base64.b64decode(base64_data)
+
+                # Utilisez PIL pour créer une image à partir des données binaires
+                image = Image.open(BytesIO(image_data))
+
+                # Construire le chemin du fichier local
+                file_path = os.path.join(folder, f'image_{index}.jpg')
+
+                # Enregistrez l'image dans le fichier local
+                image.save(file_path, 'JPEG')
+                print(
+                    f"Image {index} téléchargée avec succès dans {file_path}")
+
+            except Exception as e:
+                print(f"Échec du téléchargement de l'image {index}: {e}")
+
+
+# Utilisation de la fonction download_images_from_csv
+# Assurez-vous de fournir le chemin correct du fichier CSV et le nom du dossier de destination
+download_images_from_csv('result/chien/images.csv', 'images_chien')
