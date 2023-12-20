@@ -61,4 +61,4 @@ Bienvenue dans [animals] ! Ce projet parcourt [la banque d'images de Google et r
 
 ## Contribuer
 
-Si vous souhaitez contribuer à [Nom de Votre Projet], veuillez le forker.
+Si vous souhaitez contribuer au projet, veuillez le forker.
